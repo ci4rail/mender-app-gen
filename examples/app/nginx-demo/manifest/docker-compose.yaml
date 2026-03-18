@@ -1,0 +1,39 @@
+services:
+  web:
+    image: docker.io/library/nginx:alpine
+    labels:
+      com.ci4rail.app.software-version: "${SOFTWARE_VERSION}"
+    ports:
+      - "8080:80"
+    networks:
+      - testnet
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+    restart: unless-stopped
+
+  tester:
+    image: docker.io/library/alpine:latest
+    labels:
+      com.ci4rail.app.software-version: "${SOFTWARE_VERSION}"
+    depends_on:
+      web:
+        condition: service_healthy
+    networks:
+      - testnet
+    entrypoint: >
+      sh -c "
+      set -e;
+      echo 'Waiting for web service...';
+      date;
+      sleep 2;
+      date;
+      echo 'Testing connection to web:';
+      wget -qO- http://web:80 || echo 'Failed to connect';
+      "
+
+networks:
+  testnet:
+    driver: bridge
