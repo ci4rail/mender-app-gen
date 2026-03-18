@@ -261,7 +261,9 @@ export_image() {
 
     [[ "$image" == "" ]] && { return 0; }
     if [[ "${orchestrator}" == "${DOCKER_COMPOSE_ORCHESTRATOR}" ]]; then
-        docker image save "$image" -o "${output}"
+        # Export exactly the requested platform variant to avoid missing digest
+        # errors when the local image store has multi-platform references.
+        docker image save --platform "$platform" "$image" -o "${output}"
     else
         ctr image export "${output}" "$image" --platform "$platform"
     fi
