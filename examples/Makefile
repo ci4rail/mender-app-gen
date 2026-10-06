@@ -2,6 +2,9 @@
 ARTIFACT_NAME ?= app
 ORCHESTRATOR ?= docker-compose
 OUTPUT_DIR ?= ./artifacts
+# Optional signing: make SIGNING_KEY=./customer-artifact.key.pem
+SIGNING_KEY ?=
+VERIFICATION_KEY ?=
 
 # List of platforms and architectures
 PLATFORMS ?= linux/arm64 # linux/amd64
@@ -43,10 +46,12 @@ build-artifacts:
 				        --orchestrator "$(ORCHESTRATOR)" \
 				        --manifests-dir "$$dir/manifest" \
 				        --output-path "$$output_path" \
+				        $(if $(VERIFICATION_KEY),--verification-key "$(VERIFICATION_KEY)") \
 				        -- \
 				        --software-name="$$(basename $$dir)" \
 				        --software-version="$(VERSION)" \
 						--software-filesystem=data-partition \
+						$(if $(SIGNING_KEY),--key "$(SIGNING_KEY)") || exit $$?; \
 				echo "Mender artifact built successfully: $$output_path"; \
 			done \
 		done \

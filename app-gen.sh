@@ -32,6 +32,7 @@ Usage: $0 [options] [-- [options-for-mender-artifact] ]
         --artifact-name     - Artifact name
         --device-type       - Target device type identification (can be given more than once)
         --output-path       - Path to output artifact file. Default: reboot-artifact.mender
+        --verification-key  - Public key used to verify the generated artifact
         --image [current-url,]new-url       - Path to output artifact file. Default: reboot-artifact.mender
         --deep-delta        - Calculate delta by parsing the image
         --manifests-dir     - Directory containing orchestrator-specific manifests describing the deployment
@@ -68,6 +69,7 @@ delta_cmd="xdelta3 -e -s"
 declare -a device_types
 artifact_name=""
 output_path="app-artifact.mender"
+verification_key=""
 passthrough_args=""
 version="1.0"
 orchestrator=""
@@ -83,6 +85,13 @@ set +u
 while test $# -gt 0; do
     set -u
     case "$1" in
+        --verification-key)
+            if [ -z "${2:-}" ]; then
+                show_help_and_exit_error
+            fi
+            verification_key="$2"
+            shift 2
+            ;;
         --application-name | -a)
             if [ -z "$2" ]; then
                 show_help_and_exit_error
@@ -499,6 +508,10 @@ mender-artifact write module-image \
     $passthrough_args
 
 echo "Artifact $output_path generated successfully:"
-mender-artifact read "$output_path"
+if [ -n "$verification_key" ]; then
+    mender-artifact read -k "$verification_key" "$output_path"
+else
+    mender-artifact read "$output_path"
+fi
 
 exit 0
